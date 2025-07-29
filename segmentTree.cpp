@@ -1,94 +1,69 @@
+
 #include <iostream>
 #include <vector>
 using namespace std;
 
 class SegmentTree {
 private:
-    // Define the structure of each node in the segment tree
-    struct Node {
-        int start, end;      // The range [start, end] this node covers
-        long long sum;       // The sum of elements in the range [start, end]
-        Node* left;          // Pointer to left child (covers left half)
-        Node* right;         // Pointer to right child (covers right half)
+    int n;
+    vector<int> tree;
 
-        // Constructor to initialize the node with given range
-        Node(int s, int e) : start(s), end(e), sum(0), left(nullptr), right(nullptr) {}
-    };
-
-    Node* root;  // Root of the segment tree
-
-    // Recursively build the segment tree from the input array
-    Node* build(const vector<int>& arr, int start, int end) {
-        Node* node = new Node(start, end);  // Create a new node for range [start, end]
+    // Build the tree from the input array
+    void build(vector<int>& a, int node, int start, int end) {
         if (start == end) {
-            // Leaf node: store the value from array
-            node->sum = arr[start];
+            tree[node] = a[start];
         } else {
             int mid = (start + end) / 2;
-            // Recursively build left and right subtrees
-            node->left = build(arr, start, mid);
-            node->right = build(arr, mid + 1, end);
-            // Set current node's sum as the sum of its children
-            node->sum = node->left->sum + node->right->sum;
+            build(a, 2 * node, start, mid);
+            build(a, 2 * node + 1, mid + 1, end);
+            tree[node] = tree[2 * node] + tree[2 * node + 1]; // Modify operation here
         }
-        return node;
     }
 
-    // Recursively update the value at index idx to val
-    void update(Node* node, int idx, int val) {
-        if (node->start == node->end) {
-            // Leaf node: directly update the value
-            node->sum = val;
+    // Query sum from l to r
+    int query(int node, int start, int end, int l, int r) {
+        if (r < start || end < l)
+            return 0; // Return identity for sum
+        if (l <= start && end <= r)
+            return tree[node];
+        int mid = (start + end) / 2;
+        int leftSum = query(2 * node, start, mid, l, r);
+        int rightSum = query(2 * node + 1, mid + 1, end, l, r);
+        return leftSum + rightSum; // Modify operation here
+    }
+
+    // Point update: update index idx to val
+    void update(int node, int start, int end, int idx, int val) {
+        if (start == end) {
+            tree[node] = val;
         } else {
-            int mid = (node->start + node->end) / 2;
-            // Recurse to the left or right child depending on idx
+            int mid = (start + end) / 2;
             if (idx <= mid)
-                update(node->left, idx, val);
+                update(2 * node, start, mid, idx, val);
             else
-                update(node->right, idx, val);
-            // Recalculate current node's sum after update
-            node->sum = node->left->sum + node->right->sum;
+                update(2 * node + 1, mid + 1, end, idx, val);
+            tree[node] = tree[2 * node] + tree[2 * node + 1]; // Modify operation here
         }
-    }
-
-    // Recursively compute the sum in the range [l, r]
-    long long query(Node* node, int l, int r) {
-        if (!node || r < node->start || node->end < l)
-            return 0;  // No overlap with current segment
-
-        if (l <= node->start && node->end <= r)
-            return node->sum;  // Complete overlap: return precomputed sum
-
-        // Partial overlap: query both children and combine the result
-        return query(node->left, l, r) + query(node->right, l, r);
     }
 
 public:
-    // Constructor: builds the tree from input array
-    SegmentTree(const vector<int>& arr) {
-        root = build(arr, 0, arr.size() - 1);
+    SegmentTree(vector<int>& a) {
+        n = a.size();
+        tree.resize(4 * n);
+        build(a, 1, 0, n - 1);
     }
 
-    // Public update method: sets arr[idx] = val
+    int query(int l, int r) {
+        return query(1, 0, n - 1, l, r);
+    }
+
     void update(int idx, int val) {
-        update(root, idx, val);
-    }
-
-    // Public query method: returns sum from arr[l] to arr[r]
-    long long query(int l, int r) {
-        return query(root, l, r);
-    }
-
-    // Helper to print the tree (optional, for debugging)
-    void printTree(Node* node) {
-        if (!node) return;
-        cout << "[" << node->start << ", " << node->end << "] → Sum: " << node->sum << "\n";
-        printTree(node->left);
-        printTree(node->right);
-    }
-
-    // Overload: starts print from root
-    void printTree() {
-        printTree(root);
+        update(1, 0, n - 1, idx, val);
     }
 };
+
+
+
+
+
+
