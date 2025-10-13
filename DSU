@@ -1,3 +1,4 @@
+vector<int> parent, rank;
 DSU(int n){
     parent.resize(n);
     rank.resize(n,0);
